@@ -32,8 +32,9 @@ jobs:
       - name: Restore
         run: dotnet restore DemoApp.sln
 
-      # ✅ Sonar Begin (PR support included)
-      - name: Sonar Begin
+      # 🔥 Sonar Begin (PR only)
+      - name: Sonar Begin (PR)
+        if: github.event_name == 'pull_request'
         run: |
           dotnet sonarscanner begin \
             /k:"demo-dotnet-sonar" \
@@ -44,15 +45,24 @@ jobs:
             /d:sonar.pullrequest.branch="${{ github.head_ref }}" \
             /d:sonar.pullrequest.base="${{ github.base_ref }}"
 
+      # 🔥 Sonar Begin (Push only)
+      - name: Sonar Begin (Push)
+        if: github.event_name != 'pull_request'
+        run: |
+          dotnet sonarscanner begin \
+            /k:"demo-dotnet-sonar" \
+            /d:sonar.host.url="${{ secrets.SONAR_HOST_URL }}" \
+            /d:sonar.login="${{ secrets.SONAR_TOKEN }}" \
+            /d:sonar.cs.opencover.reportsPaths="**/coverage.opencover.xml"
+
+      # ✅ Build
       - name: Build
         run: dotnet build DemoApp.sln --no-restore --configuration Release
 
-      - name: Test
-        run: dotnet test DemoApp.sln --no-build --configuration Release
-      # ✅ Test with Coverage
+      # ✅ Test with Coverage (single step only)
       - name: Test
         run: |
-          dotnet test \
+          dotnet test DemoApp.sln \
             --no-build \
             --configuration Release \
             /p:CollectCoverage=true \
@@ -65,7 +75,7 @@ jobs:
           dotnet sonarscanner end \
             /d:sonar.login="${{ secrets.SONAR_TOKEN }}"
 
-      # ✅ Quality Gate (acts as reviewer)
+      # ✅ Quality Gate
       - name: Sonar Quality Gate
         uses: sonarsource/sonarqube-quality-gate-action@v1.1.0
         timeout-minutes: 5
