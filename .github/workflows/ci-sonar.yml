@@ -32,7 +32,7 @@ jobs:
       - name: Restore
         run: dotnet restore DemoApp.sln
 
-      # 🔥 Sonar Begin (PR only)
+      # 🔥 Sonar Begin (PR)
       - name: Sonar Begin (PR)
         if: github.event_name == 'pull_request'
         run: |
@@ -45,7 +45,7 @@ jobs:
             /d:sonar.pullrequest.branch="${{ github.head_ref }}" \
             /d:sonar.pullrequest.base="${{ github.base_ref }}"
 
-      # 🔥 Sonar Begin (Push only)
+      # 🔥 Sonar Begin (Push)
       - name: Sonar Begin (Push)
         if: github.event_name != 'pull_request'
         run: |
@@ -59,7 +59,7 @@ jobs:
       - name: Build
         run: dotnet build DemoApp.sln --no-restore --configuration Release
 
-      # ✅ Test with Coverage (single step only)
+      # ✅ Test with Coverage
       - name: Test
         run: |
           dotnet test DemoApp.sln \
@@ -75,9 +75,17 @@ jobs:
           dotnet sonarscanner end \
             /d:sonar.login="${{ secrets.SONAR_TOKEN }}"
 
-      # ✅ Quality Gate
+      # 🔍 Debug (optional but useful)
+      - name: Debug Sonar Files
+        run: |
+          ls -la
+          ls -la .scannerwork || echo "No scannerwork folder"
+
+      # ✅ Quality Gate (ONLY if Sonar succeeded)
       - name: Sonar Quality Gate
+        if: success()
         uses: sonarsource/sonarqube-quality-gate-action@v1.1.0
-        timeout-minutes: 5
+        with:
+          scanMetadataReportFile: .scannerwork/report-task.txt
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
