@@ -30,7 +30,7 @@ jobs:
 
       # ✅ Restore
       - name: Restore
-        run: dotnet restore
+        run: dotnet restore DemoApp.sln
 
       # ✅ Sonar Begin (PR support included)
       - name: Sonar Begin
@@ -44,10 +44,11 @@ jobs:
             /d:sonar.pullrequest.branch="${{ github.head_ref }}" \
             /d:sonar.pullrequest.base="${{ github.base_ref }}"
 
-      # ✅ Build
       - name: Build
-        run: dotnet build --no-restore --configuration Release
+        run: dotnet build DemoApp.sln --no-restore --configuration Release
 
+      - name: Test
+        run: dotnet test DemoApp.sln --no-build --configuration Release
       # ✅ Test with Coverage
       - name: Test
         run: |
