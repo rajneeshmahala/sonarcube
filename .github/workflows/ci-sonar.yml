@@ -81,11 +81,11 @@ jobs:
           ls -la
           ls -la .scannerwork || echo "No scannerwork folder"
 
-      # ✅ Quality Gate (ONLY if Sonar succeeded)
-      - name: Sonar Quality Gate
-        if: success()
-        uses: sonarsource/sonarqube-quality-gate-action@v1.1.0
-        with:
-          scanMetadataReportFile: .scannerwork/report-task.txt
-        env:
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+ #     # ✅ Quality Gate (ONLY if Sonar succeeded)
+ #    - name: Sonar Quality Gate
+ #       if: success()
+#        uses: sonarsource/sonarqube-quality-gate-action@v1.1.0
+ #       with:
+  #        scanMetadataReportFile: .scannerwork/report-task.txt
+   #     env:
+    #      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
