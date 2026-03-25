@@ -1,0 +1,72 @@
+name: .NET CI + Sonar Quality Gate
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+
+jobs:
+  build-sonar:
+    runs-on: ubuntu-latest
+
+    steps:
+      # ✅ Checkout
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # ✅ Setup .NET
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      # ✅ Install Sonar Scanner
+      - name: Install SonarScanner
+        run: |
+          dotnet tool install --global dotnet-sonarscanner
+          echo "$HOME/.dotnet/tools" >> $GITHUB_PATH
+
+      # ✅ Restore
+      - name: Restore
+        run: dotnet restore
+
+      # ✅ Sonar Begin (PR support included)
+      - name: Sonar Begin
+        run: |
+          dotnet sonarscanner begin \
+            /k:"demo-dotnet-sonar" \
+            /d:sonar.host.url="${{ secrets.SONAR_HOST_URL }}" \
+            /d:sonar.login="${{ secrets.SONAR_TOKEN }}" \
+            /d:sonar.cs.opencover.reportsPaths="**/coverage.opencover.xml" \
+            /d:sonar.pullrequest.key="${{ github.event.pull_request.number }}" \
+            /d:sonar.pullrequest.branch="${{ github.head_ref }}" \
+            /d:sonar.pullrequest.base="${{ github.base_ref }}"
+
+      # ✅ Build
+      - name: Build
+        run: dotnet build --no-restore --configuration Release
+
+      # ✅ Test with Coverage
+      - name: Test
+        run: |
+          dotnet test \
+            --no-build \
+            --configuration Release \
+            /p:CollectCoverage=true \
+            /p:CoverletOutputFormat=opencover \
+            /p:CoverletOutput=./coverage/
+
+      # ✅ Sonar End
+      - name: Sonar End
+        run: |
+          dotnet sonarscanner end \
+            /d:sonar.login="${{ secrets.SONAR_TOKEN }}"
+
+      # ✅ Quality Gate (acts as reviewer)
+      - name: Sonar Quality Gate
+        uses: sonarsource/sonarqube-quality-gate-action@v1.1.0
+        timeout-minutes: 5
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
